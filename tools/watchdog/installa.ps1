@@ -27,7 +27,8 @@ if (-not (Test-Path $Lnk)) {
 } else { Write-Host 'Collegamento gia'' presente, non toccato.' }
 
 # 2. Task pianificato: gira nella sessione dell'utente (finestra visibile da AnyDesk)
-$ps = Join-Path $PSHOME 'powershell.exe'
+# Sempre Windows PowerShell 5.1: in PowerShell 7 $PSHOME non contiene powershell.exe
+$ps = Join-Path $env:WINDIR 'System32\WindowsPowerShell\v1.0\powershell.exe'
 $action = New-ScheduledTaskAction -Execute $ps `
     -Argument "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$PSScriptRoot\watchdog.ps1`""
 $triggers = @(
