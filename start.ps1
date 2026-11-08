@@ -10,6 +10,8 @@ Set-Location -Path $PSScriptRoot
 # Frisch installierte Werkzeuge finden, auch wenn Windows den PATH noch nicht neu geladen hat
 $env:Path = "$env:USERPROFILE\.bun\bin;$env:USERPROFILE\.local\bin;$env:Path"
 $Port = if ($env:RAYBANCLAUDE_PORT) { $env:RAYBANCLAUDE_PORT } else { 18790 }
+# Accesso via 'tailscale serve': il server ascolta solo in locale, Tailscale inoltra la porta
+if (-not $env:RAYBANCLAUDE_HOST) { $env:RAYBANCLAUDE_HOST = '127.0.0.1' }
 
 if (-not (Get-Command claude -ErrorAction SilentlyContinue)) {
     Write-Host "Claude Code mancante: esegui prima setup.ps1." -ForegroundColor Red

@@ -17,7 +17,9 @@ export const DEFAULT_PORT = 18790
 export const MIN_PORT = 1024
 export const MAX_PORT = 65535
 export const HTTP_DEFAULT_PORT = 80
-export const LISTEN_HOST = '0.0.0.0' // LAN-Zugriff vom Handy
+// Di default ascolta su tutte le interfacce (LAN). Con RAYBANCLAUDE_HOST=127.0.0.1 ascolta solo in locale:
+// serve quando l'accesso dall'iPhone passa da `tailscale serve` (che occupa la stessa porta sull'IP Tailscale).
+export const LISTEN_HOST = process.env.RAYBANCLAUDE_HOST?.trim() || '0.0.0.0'
 
 // ── Grenzwerte ─────────────────────────────────────────────────────────────
 export const MAX_TEXT_CHARS = 8000            // Nutzernachricht
