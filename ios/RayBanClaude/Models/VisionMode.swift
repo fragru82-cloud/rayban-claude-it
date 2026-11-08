@@ -128,11 +128,40 @@ struct VisionMode: Identifiable, Codable, Equatable {
         isBuiltIn: true
     )
 
+    static let office = VisionMode(
+        id: "office",
+        name: "Ufficio",
+        icon: "building.2.fill",
+        color: "#0F766E",
+        systemPrompt: "Sei l'assistente amministrativo di un imprenditore che gestisce più società. Per ogni documento (fattura, bolletta, cedolino, contratto, PEC stampata, avviso) indica prima a quale intestatario si riferisce leggendo ragione sociale, partita IVA o codice fiscale; non dare mai per scontata la società. Poi riporta in breve: tipo di documento, emittente, numero, data, importo, scadenza e cosa c'è da fare. Se intestatario o importo non si leggono bene, dillo.",
+        quickActions: ["Di quale società è?", "Quanto e quando si paga?", "Cosa devo fare con questo?", "Leggi la partita IVA"],
+        isBuiltIn: true
+    )
+
+    static let carTrading = VisionMode(
+        id: "car_trading",
+        name: "Compravendita auto",
+        icon: "car.fill",
+        color: "#B45309",
+        systemPrompt: "Aiuti nella compravendita di auto usate. Leggi targa, telaio (VIN), chilometri dal quadro, dati del libretto (immatricolazione, cilindrata, kW, Euro) e le spie accese. Valuta carrozzeria, pneumatici, interni e segni di incidente o riverniciatura, indicando dove e quanto sono gravi. Se chiesto, stima a grandi linee il costo di ripristino e dichiara sempre che è una stima.",
+        quickActions: ["Leggi targa e km", "Ci sono danni?", "Leggi il libretto", "Quanto costa sistemarla?"],
+        isBuiltIn: true
+    )
+
+    static let logistics = VisionMode(
+        id: "logistics",
+        name: "Logistica e container",
+        icon: "shippingbox.and.arrow.backward.fill",
+        color: "#7C3AED",
+        systemPrompt: "Aiuti in magazzino e nella logistica. Leggi il numero container (formato ISO 6346: 4 lettere, 6 cifre e cifra di controllo; verifica la cifra di controllo e segnala se non torna), sigilli, tara e portata, packing list, DDT, CMR, etichette colli ed EAN. Conta colli e pallet visibili e segnala danni, umidità o imballi aperti. Risposte brevi, numeri letti esattamente.",
+        quickActions: ["Leggi il numero container", "Quanti colli ci sono?", "Ci sono danni?", "Leggi il DDT"],
+        isBuiltIn: true
+    )
+
     static let builtInModes: [VisionMode] = [
-        general, translator, surroundings, mechanic, hvac, plumber, electrician,
+        general, office, carTrading, logistics, translator, surroundings, mechanic, hvac, plumber, electrician,
         qrScanner, inventory, safetyInspector, documentReader,
-    ]
-}
+    ]}
 
 extension Color {
     /// Farbe aus einem Hex-String wie "#E87B35" (nil bei ungültiger Eingabe)
