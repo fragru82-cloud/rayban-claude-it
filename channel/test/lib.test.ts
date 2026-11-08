@@ -10,6 +10,7 @@ import { HISTORY_DAYS, MAX_MEMORY_ITEM_CHARS, MAX_MEMORY_ITEMS, MS_PER_DAY } fro
 import { appendHistory, dayStamp, pruneHistory, readHistory } from '../lib/history.ts'
 import { addFact, cleanMemoryItems, forgetFact, memoryBlock, queueMemory, takeQueuedMemory } from '../lib/memory.ts'
 import { findTailscaleIp } from '../lib/network.ts'
+import { noteBody, noteConfigFrom, sendNote, stripEmoji } from '../lib/note.ts'
 import type { LanIp } from '../lib/network.ts'
 
 const lan = (address: string, iface: string): LanIp => ({ address, iface, rank: 0 })
@@ -89,5 +90,37 @@ describe('Vorgemerkte Fakten (Claude-App → Brille)', () => {
     queueMemory(file, 'Wohnt in Hamburg')
     expect(takeQueuedMemory(file)).toEqual(['mag jazz', 'Wohnt in Hamburg']) // neueste Schreibweise gewinnt
     expect(takeQueuedMemory(file)).toEqual([])
+  })
+})
+
+// ── Note su WhatsApp ───────────────────────────────────────────────────────
+
+describe('note', () => {
+  const ok = { RAYBANCLAUDE_NOTE_URL: 'https://example.com/wa-send', RAYBANCLAUDE_NOTE_TOKEN: 'abc', RAYBANCLAUDE_NOTE_TO: '393331234567' }
+
+  test('configurazione valida', () => {
+    expect(noteConfigFrom(ok)).toEqual({ url: ok.RAYBANCLAUDE_NOTE_URL, token: 'abc', to: '393331234567' })
+  })
+
+  test('configurazione incompleta o non sicura → null', () => {
+    expect(noteConfigFrom({})).toBeNull()
+    expect(noteConfigFrom({ ...ok, RAYBANCLAUDE_NOTE_URL: 'http://example.com' })).toBeNull()
+    expect(noteConfigFrom({ ...ok, RAYBANCLAUDE_NOTE_TO: '+39 333' })).toBeNull()
+  })
+
+  test('niente emoji', () => {
+    expect(stripEmoji('Ok 👍 fatto ✅')).toBe('Ok fatto')
+  })
+
+  test('destinatario sempre quello configurato', () => {
+    const cfg = noteConfigFrom(ok)
+    expect(cfg).not.toBeNull()
+    const body = JSON.parse(noteBody(cfg!, 'Chiamare il commercialista'))
+    expect(body.to).toBe('393331234567')
+    expect(body.message).toBe('Nota dagli occhiali: Chiamare il commercialista')
+  })
+
+  test('senza configurazione dà errore', async () => {
+    await expect(sendNote(null, 'x')).rejects.toThrow('Note non configurate')
   })
 })

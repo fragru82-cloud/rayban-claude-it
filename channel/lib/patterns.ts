@@ -119,3 +119,15 @@ export const ISO_DATE = /^20\d{2}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/
 // WLAN-Adapter (wird bevorzugt, weil das Handy meist im WLAN hängt). Passt: "WLAN", "Wi-Fi", "en0"; lehnt ab: "Ethernet 2".
 // https://regex101.com/?flavor=javascript&regex=wi-%3Ffi%7Cwlan%7Cwireless%7Cen0&flags=im&testString=WLAN%0AWi-Fi%0Aen0%0AEthernet%202
 export const WIFI_IFACE = /wi-?fi|wlan|wireless|en0/i
+
+// Numero destinatario delle note: 8–15 cifre (E.164 senza +). Passt: "393331234567"; lehnt ab: "+39 333 1234567", "123".
+// https://regex101.com/?flavor=javascript&regex=%5E%5Cd%7B8%2C15%7D%24&flags=m&testString=393331234567%0A%2B39%20333%201234567%0A123
+export const NOTE_RECIPIENT = /^\d{8,15}$/
+
+// Emoji e caratteri di unione (su WhatsApp via webhook diventano «??»). Passt: "Ok 👍 fatto ✅" → "Ok  fatto "; lehnt ab: "Ok fatto" (bleibt).
+// https://regex101.com/?flavor=javascript&regex=%5B%5Cp%7BExtended_Pictographic%7D%5Cu%7BFE0F%7D%5Cu%7B200D%7D%5D&flags=gu&testString=Ok%20%F0%9F%91%8D%20fatto%20%E2%9C%85%0AOk%20fatto
+export const EMOJI = /[\p{Extended_Pictographic}\u{FE0F}\u{200D}]/gu
+
+// Spazi multipli (diventano uno solo). Passt: "a  b" → "a b"; lehnt ab: "a b".
+// https://regex101.com/?flavor=javascript&regex=%5Cs%7B2%2C%7D&flags=g&testString=a%20%20b%0Aa%20b
+export const MULTI_SPACE = /\s{2,}/g

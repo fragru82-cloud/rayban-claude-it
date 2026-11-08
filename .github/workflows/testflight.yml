@@ -1,0 +1,129 @@
+# Firma l'app con l'account Apple Developer e la carica su TestFlight.
+# Così si installa e si aggiorna dall'app TestFlight sull'iPhone: niente Mac, niente Sideloadly,
+# niente scadenza dei 7 giorni (ogni build TestFlight vale 90 giorni; a ogni modifica ne arriva una nuova).
+#
+# Segreti del repository (Settings → Secrets and variables → Actions):
+#   APPLE_TEAM_ID     Team ID (developer.apple.com → Account → Iscrizione)
+#   ASC_KEY_ID        ID della chiave API di App Store Connect
+#   ASC_ISSUER_ID     Issuer ID della chiave API
+#   ASC_KEY_P8        contenuto del file AuthKey_XXXX.p8
+# Variabile facoltativa: BUNDLE_ID (default sotto). Deve essere uguale a quella dell'app in App Store Connect.
+name: TestFlight
+
+on:
+  push:
+    branches: [main]
+    paths: ["ios/**", ".github/workflows/testflight.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: testflight
+  cancel-in-progress: false
+
+env:
+  BUNDLE_ID: ${{ vars.BUNDLE_ID || 'it.globalinkgroup.claudeocchiali' }}
+
+jobs:
+  upload:
+    name: Firma e carica su TestFlight
+    runs-on: macos-26
+    timeout-minutes: 60
+    steps:
+      - name: Segreti presenti?
+        id: check
+        env:
+          TEAM: ${{ secrets.APPLE_TEAM_ID }}
+          KEY: ${{ secrets.ASC_KEY_P8 }}
+        run: |
+          if [ -z "$TEAM" ] || [ -z "$KEY" ]; then
+            echo "::warning::Segreti TestFlight non impostati: salto il caricamento."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.check.outputs.ok == 'true'
+        with:
+          persist-credentials: false
+
+      - name: Xcode
+        if: steps.check.outputs.ok == 'true'
+        uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1.7.0
+        with:
+          xcode-version: latest-stable
+
+      - name: Progetto Xcode
+        if: steps.check.outputs.ok == 'true'
+        working-directory: ios
+        run: |
+          brew install xcodegen
+          xcodegen generate
+
+      - name: Chiave API App Store Connect
+        if: steps.check.outputs.ok == 'true'
+        env:
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+        run: |
+          printf '%s\n' "$ASC_KEY_P8" > "$RUNNER_TEMP/AuthKey.p8"
+          chmod 600 "$RUNNER_TEMP/AuthKey.p8"
+
+      - name: Archivio firmato
+        if: steps.check.outputs.ok == 'true'
+        working-directory: ios
+        env:
+          TEAM: ${{ secrets.APPLE_TEAM_ID }}
+          KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ISSUER: ${{ secrets.ASC_ISSUER_ID }}
+          BUILD_NUMBER: ${{ github.run_number }}
+        run: |
+          set -o pipefail
+          xcodebuild archive \
+            -project RayBanClaude.xcodeproj -scheme RayBanClaude -configuration Release \
+            -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/App.xcarchive" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$RUNNER_TEMP/AuthKey.p8" -authenticationKeyID "$KEY_ID" -authenticationKeyIssuerID "$ISSUER" \
+            DEVELOPMENT_TEAM="$TEAM" RAYBANCLAUDE_BUNDLE_ID="$BUNDLE_ID" CODE_SIGN_STYLE=Automatic \
+            CURRENT_PROJECT_VERSION="$((BUILD_NUMBER + 100))" \
+            2>&1 | tee archive.log | grep -E "error:|ARCHIVE (SUCCEEDED|FAILED)" || true
+          grep -q "ARCHIVE SUCCEEDED" archive.log
+
+      - name: Caricamento su TestFlight
+        if: steps.check.outputs.ok == 'true'
+        working-directory: ios
+        env:
+          TEAM: ${{ secrets.APPLE_TEAM_ID }}
+          KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ISSUER: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>upload</string>
+            <key>teamID</key><string>${TEAM}</string>
+            <key>signingStyle</key><string>automatic</string>
+            <key>testFlightInternalTestingOnly</key><true/>
+          </dict></plist>
+          PLIST
+          set -o pipefail
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/App.xcarchive" -exportPath "$RUNNER_TEMP/export" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$RUNNER_TEMP/AuthKey.p8" -authenticationKeyID "$KEY_ID" -authenticationKeyIssuerID "$ISSUER" \
+            2>&1 | tee export.log | grep -E "error:|Upload succeeded|EXPORT (SUCCEEDED|FAILED)" || true
+          grep -q "EXPORT SUCCEEDED" export.log
+
+      - name: Errori
+        if: failure()
+        working-directory: ios
+        run: grep -h -E -B2 -A8 "error:" archive.log export.log 2>/dev/null | head -200 || true
+
+      - name: Pulizia chiave
+        if: always()
+        run: rm -f "$RUNNER_TEMP/AuthKey.p8"

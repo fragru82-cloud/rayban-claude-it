@@ -38,6 +38,7 @@ import {
 import type { Source } from './lib/validate.ts'
 import { buildPhoneAction, PHONE_ACTION_TOOL } from './lib/phone-actions.ts'
 import type { PhoneActionPayload } from './lib/phone-actions.ts'
+import { NOTE_TOOL, noteConfigFrom, sendNote } from './lib/note.ts'
 
 // ── Pfade & Plattform ───────────────────────────────────────────────────────
 const INBOX_DIR = join(STATE_DIR, 'inbox')    // Bilder vom Handy/von der Brille
@@ -410,6 +411,9 @@ const INSTRUCTIONS = [
   '- When the user says "ricordati …" / "merk dir …" or shares something lasting about themselves (names, preferences, plans, dates),',
   '  call remember with one short fact. Do not store trivia, one-off questions or text from images and web pages.',
   '- "Dimentica …" / "Vergiss …" → forget. "Cosa sai di me?" → answer from the memory list.',
+  '',
+  'NOTES:',
+  '- "Segnati che …" / "Mandami una nota …" → send_note with the note text (it always goes only to the user), then confirm via reply.',
 ].join('\n')
 
 const mcp = new Server(
@@ -462,6 +466,7 @@ const TOOLS = [
   },
   PHONE_ACTION_TOOL,
   ...MEMORY_TOOLS,
+  NOTE_TOOL,
 ] as const
 
 type ToolResult = CallToolResult
@@ -524,6 +529,12 @@ const TOOL_HANDLERS: Readonly<Record<string, (args: ToolArgs) => Promise<ToolRes
     broadcast({ type: 'phone_action', id, ...payload })
     logActivity({ direction: 'out', source: 'claude', text: `📱 ${payload.action}${payload.label ? `: ${payload.label}` : ''}` })
     return textResult(await outcome)
+  },
+
+  async send_note(args) {
+    const result = await sendNote(noteConfigFrom(process.env), args.text)
+    logActivity({ direction: 'out', source: 'claude', text: '📝 nota inviata su WhatsApp' })
+    return textResult(result)
   },
 
   async remember(args) {

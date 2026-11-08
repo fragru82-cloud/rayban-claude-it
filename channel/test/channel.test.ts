@@ -128,13 +128,13 @@ afterAll(() => {
 })
 
 describe('MCP-Seite', () => {
-  test('meldet Channel- und Permission-Capability sowie sechs Tools', async () => {
+  test('meldet Channel- und Permission-Capability sowie sieben Tools', async () => {
     const init = received.find(m => m.id === 1)?.result ?? {}
     const caps = (init.capabilities ?? {}) as Record<string, Record<string, unknown>>
     expect(caps.experimental?.['claude/channel']).toEqual({})
     expect(caps.experimental?.['claude/channel/permission']).toEqual({})
     const tools = (await rpc('tools/list')).tools as { name: string }[]
-    expect(tools.map(t => t.name).sort()).toEqual(['edit_message', 'forget', 'phone_action', 'remember', 'reply', 'request_photo'])
+    expect(tools.map(t => t.name).sort()).toEqual(['edit_message', 'forget', 'phone_action', 'remember', 'reply', 'request_photo', 'send_note'])
   })
 })
 
