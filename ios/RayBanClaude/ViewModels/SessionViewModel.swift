@@ -141,6 +141,7 @@ final class SessionViewModel: ObservableObject {
         speechManager.setLanguage(config.speechLanguage)
         speechManager.setPauseThreshold(config.speechPauseThreshold)
         speechManager.configureElevenLabs(apiKey: config.elevenLabsAPIKey, voiceId: config.elevenLabsVoiceId)
+        speechManager.configureAppleVoice(voiceId: config.appleVoiceId, rate: config.speechRate)
         speechManager.wakeWordEnabled = config.wakeWordEnabled
         phoneActions.memory = config.memoryEnabled ? memory : nil
         cameraManager.configure(frameInterval: config.videoFrameInterval, jpegQuality: config.videoJPEGQuality)

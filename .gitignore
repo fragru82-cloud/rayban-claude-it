@@ -70,3 +70,7 @@ npm-debug.log*
 # Temporär
 tmp/
 *.tmp
+
+# Configurazione personale (solo sul PC)
+CLAUDE.local.md
+CLAUDE.local.md.bak-*

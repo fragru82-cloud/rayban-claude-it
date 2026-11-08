@@ -16,13 +16,8 @@ $Port     = if ($env:RAYBANCLAUDE_PORT) { $env:RAYBANCLAUDE_PORT } else { 18790 
 $Health   = "http://127.0.0.1:$Port/health"
 $Log      = Join-Path $PSScriptRoot 'watchdog.log'
 $WaUrl    = 'https://www.globalinkgroup.it/wa-send'
-$WaNumber = '393534545606'
-$Mega     = Join-Path $env:USERPROFILE 'Desktop\MEGA CAPANNONE'
-$TokenFiles = @(
-    (Join-Path $PSScriptRoot 'wa-token.txt'),                                  # override locale (non versionato)
-    (Join-Path $Mega 'Sviluppo\Bot e Automazioni\RIPRISTINO-COMPLETO.md'),
-    (Join-Path $Mega 'GLOBALINK-AI-CONTEXT.md')
-)
+# Token e numero: vedi token.ps1 (il numero non sta nel codice, il repo e' pubblico)
+. (Join-Path $PSScriptRoot 'token.ps1')
 
 function Write-Log($msg) {
     $line = "{0}  {1}" -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'), $msg
@@ -37,26 +32,11 @@ function Test-Health {
     } catch { return $false }
 }
 
-function Get-WaToken {
-    if ($env:RAYBANCLAUDE_WA_TOKEN) { return $env:RAYBANCLAUDE_WA_TOKEN.Trim() }
-    foreach ($f in $TokenFiles) {
-        if (-not (Test-Path $f)) { continue }
-        if ($f -like '*wa-token.txt') { return (Get-Content $f -Raw).Trim() }
-        $lines = Get-Content $f -Encoding UTF8
-        for ($i = 0; $i -lt $lines.Count; $i++) {
-            if ($lines[$i] -notmatch 'wa-send') { continue }
-            $from = [Math]::Max(0, $i - 15); $to = [Math]::Min($lines.Count - 1, $i + 15)
-            foreach ($l in $lines[$from..$to]) {
-                if ($l -match 'Bearer\s+([A-Za-z0-9_\-\.~+/=]{16,})') { return $Matches[1] }
-            }
-        }
-    }
-    return $null
-}
-
 function Send-Wa($text) {
     $token = Get-WaToken
+    $WaNumber = Get-WaNumber
     if (-not $token) { Write-Log 'ERRORE: token wa-send non trovato (crea tools\watchdog\wa-token.txt)'; return }
+    if (-not $WaNumber) { Write-Log 'ERRORE: numero non configurato (esegui tools\personale\configura.ps1 -Numero ...)'; return }
     # Campi duplicati per compatibilita' col formato del webhook; testo senza emoji.
     $body = @{ to = $WaNumber; number = $WaNumber; phone = $WaNumber; message = $text; text = $text } | ConvertTo-Json -Compress
     try {

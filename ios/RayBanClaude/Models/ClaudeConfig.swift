@@ -38,6 +38,10 @@ struct ClaudeConfig: Codable, Equatable {
     var autoListen: Bool = true
     /// Weckwort „Hey Claude“ / „Claudi“ – die App wartet freihändig auf dich
     var wakeWordEnabled: Bool = true
+    /// Voce dell'iPhone scelta a mano (identifier di AVSpeechSynthesisVoice); vuota = la migliore installata
+    var appleVoiceId: String = ""
+    /// Velocità della voce dell'iPhone (0 = lentissima, 1 = velocissima; 0.5 = normale)
+    var speechRate: Double = 0.5
     /// Ohne PC: Modell für die direkte Claude-API
     var directModel: String = DirectClaudeClient.defaultModel
     /// PC nicht erreichbar → automatisch direkt fragen (nur mit API-Key)
@@ -79,7 +83,7 @@ struct ClaudeConfig: Codable, Equatable {
         case gatewayHost, remoteHost, gatewayPort, connectionMode, videoFrameInterval, videoJPEGQuality
         case speechPauseThreshold, elevenLabsVoiceId, speechLanguage, autoListen, wakeWordEnabled
         case directModel, directFallback, webSearchEnabled, memoryEnabled, listenWhenLocked, keepScreenOn
-        case glassesGestures
+        case glassesGestures, appleVoiceId, speechRate
     }
 
     var isConfigured: Bool { baseURL != nil && !channelToken.isEmpty }
@@ -171,5 +175,7 @@ extension ClaudeConfig {
         listenWhenLocked = try c.decodeIfPresent(Bool.self, forKey: .listenWhenLocked) ?? defaults.listenWhenLocked
         keepScreenOn = try c.decodeIfPresent(Bool.self, forKey: .keepScreenOn) ?? defaults.keepScreenOn
         glassesGestures = try c.decodeIfPresent(Bool.self, forKey: .glassesGestures) ?? defaults.glassesGestures
+        appleVoiceId = try c.decodeIfPresent(String.self, forKey: .appleVoiceId) ?? defaults.appleVoiceId
+        speechRate = try c.decodeIfPresent(Double.self, forKey: .speechRate) ?? defaults.speechRate
     }
 }

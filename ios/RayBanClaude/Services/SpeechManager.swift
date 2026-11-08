@@ -140,6 +140,8 @@ final class SpeechManager: NSObject, ObservableObject {
     private let sink = RecognitionSink()
     private var tapInstalled = false
     private var languageCode: String = ClaudeConfig.defaultLanguage
+    private var appleVoiceId: String = ""
+    private var appleRate: Float = AVSpeechUtteranceDefaultSpeechRate
 
     private var elevenLabsClient: ElevenLabsTTSClient?
     private var elevenLabsVoiceId: String = ElevenLabsVoice.allVoices[0].id
@@ -185,6 +187,19 @@ final class SpeechManager: NSObject, ObservableObject {
     func configureElevenLabs(apiKey: String, voiceId: String) {
         elevenLabsClient = apiKey.isEmpty ? nil : ElevenLabsTTSClient(apiKey: apiKey)
         elevenLabsVoiceId = voiceId
+    }
+
+    /// Voce e velocità dell'iPhone (voiceId vuoto = la migliore installata)
+    func configureAppleVoice(voiceId: String, rate: Double) {
+        appleVoiceId = voiceId
+        appleRate = Float(min(max(rate, 0), 1))
+    }
+
+    /// Voci installate per una lingua, prima le Premium, poi le Avanzate
+    static func installedVoices(for code: String) -> [AVSpeechSynthesisVoice] {
+        AVSpeechSynthesisVoice.speechVoices()
+            .filter { $0.language == code }
+            .sorted { ($0.quality.rawValue, $0.name) > ($1.quality.rawValue, $1.name) }
     }
 
     func setPauseThreshold(_ threshold: TimeInterval) {
@@ -469,8 +484,9 @@ final class SpeechManager: NSObject, ObservableObject {
     private func speakWithApple(_ text: String) {
         try? AudioSessionManager.shared.configureForVoiceChat()
         let utterance = AVSpeechUtterance(string: text)
-        utterance.voice = Self.bestVoice(for: languageCode)
-        utterance.rate = AVSpeechUtteranceDefaultSpeechRate
+        let chosen = appleVoiceId.isEmpty ? nil : AVSpeechSynthesisVoice(identifier: appleVoiceId)
+        utterance.voice = (chosen?.language == languageCode ? chosen : nil) ?? Self.bestVoice(for: languageCode)
+        utterance.rate = appleRate
         appleSynthesizer.speak(utterance)
     }
 

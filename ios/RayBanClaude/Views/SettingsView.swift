@@ -1,4 +1,5 @@
 import SwiftUI
+import AVFoundation
 
 struct SettingsView: View {
     @ObservedObject var viewModel: SessionViewModel
@@ -334,6 +335,16 @@ struct SettingsView: View {
                 LabeledContent("Invia dopo una pausa di", value: String(format: "%.1f s", viewModel.config.speechPauseThreshold))
                 Slider(value: $viewModel.config.speechPauseThreshold, in: 0.5...3.0, step: 0.25)
             }
+            Picker("Voce dell’iPhone", selection: $viewModel.config.appleVoiceId) {
+                Text("Automatica (la migliore installata)").tag("")
+                ForEach(SpeechManager.installedVoices(for: viewModel.config.speechLanguage), id: \.identifier) { voice in
+                    Text("\(voice.name)\(Self.qualityLabel(voice.quality))").tag(voice.identifier)
+                }
+            }
+            VStack(alignment: .leading) {
+                LabeledContent("Velocità della voce", value: Self.rateLabel(viewModel.config.speechRate))
+                Slider(value: $viewModel.config.speechRate, in: 0.35...0.65, step: 0.05)
+            }
             Toggle("Parola di attivazione «Ehi Claude» / «Claudi»", isOn: $viewModel.config.wakeWordEnabled)
             Toggle("Dopo la risposta continua ad ascoltare per poco", isOn: $viewModel.config.autoListen)
             Toggle("Continua ad ascoltare con iPhone bloccato", isOn: $viewModel.config.listenWhenLocked)
@@ -362,6 +373,18 @@ struct SettingsView: View {
                  ? "Di default si usa la voce gratuita dell’iPhone. Una voce ElevenLabs si imposta dalla dashboard del PC. Consiglio: in Impostazioni di iOS → Accessibilità → Contenuto letto ad alta voce → Voci scarica una voce «Premium»: suona molto più naturale."
                  : "Senza chiave ElevenLabs parla la voce gratuita dell’iPhone."))
         }
+    }
+
+    private static func qualityLabel(_ quality: AVSpeechSynthesisVoiceQuality) -> String {
+        if quality == .premium { return " · Premium" }
+        if quality == .enhanced { return " · Avanzata" }
+        return ""
+    }
+
+    private static func rateLabel(_ rate: Double) -> String {
+        if rate < 0.45 { return "lenta" }
+        if rate > 0.55 { return "veloce" }
+        return "normale"
     }
 
     // MARK: - Über

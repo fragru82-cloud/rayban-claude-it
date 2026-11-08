@@ -52,4 +52,4 @@ if (-not $Neu -and (Test-Path (Join-Path $sessionDir '*.jsonl'))) {
 # bestätigt der Nutzer ohnehin immer selbst auf dem iPhone.
 claude @resume --dangerously-load-development-channels server:raybanclaude `
     --allowedTools "mcp__raybanclaude__reply" "mcp__raybanclaude__edit_message" "mcp__raybanclaude__request_photo" `
-    "mcp__raybanclaude__phone_action" "mcp__raybanclaude__remember" "mcp__raybanclaude__forget"
+    "mcp__raybanclaude__phone_action" "mcp__raybanclaude__remember" "mcp__raybanclaude__forget" "mcp__raybanclaude__send_note"
